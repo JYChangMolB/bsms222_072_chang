@@ -1,0 +1,197 @@
+---
+title: "R Notebook_Ch5-5.6_JYChang"
+output: html_notebook
+
+---
+# Chapter 5 ~ 5.6
+JY Chang
+
+# The tidyverse
+
+vector to dataframe
+using tidyverse
+
+#5.1 Tidy data
+
+We say that a data table is in tidy format if each row represents one observation and columns represent the different variables available for each of these observations. The murders dataset is an example of a tidy data frame.
+
+```{r}
+#>        state abb region population total
+#> 1    Alabama  AL  South    4779736   135
+#> 2     Alaska  AK   West     710231    19
+#> 3    Arizona  AZ   West    6392017   232
+#> 4   Arkansas  AR  South    2915918    93
+#> 5 California  CA   West   37253956  1257
+#> 6   Colorado  CO   West    5029196    65
+```
+Each row represent a state with each of the five columns providing a different variable related to these states: name, abbreviation, region, population, and total murders.
+
+To see how the same information can be provided in different formats, consider the following example:
+```{r}
+#>        country year fertility
+#> 1      Germany 1960      2.41
+#> 2  South Korea 1960      6.16
+#> 3      Germany 1961      2.44
+#> 4  South Korea 1961      5.99
+#> 5      Germany 1962      2.47
+#> 6  South Korea 1962      5.79
+#> 7      Germany 1963      2.49
+#> 8  South Korea 1963      5.57
+#> 9      Germany 1964      2.49
+#> 10 South Korea 1964      5.36
+#> 11     Germany 1965      2.48
+#> 12 South Korea 1965      5.16
+```
+This tidy dataset provides fertility rates for two countries across the years. This is a tidy dataset because each row presents one observation with the three variables being county, year and fertility rate. However, this dataset originally came in another format and was reshaped for the dslabs package. Originally, the data was in the following format:
+
+```{r}
+#>       country 1960 1961 1962 1963 1964 1965
+#> 1     Germany 2.41 2.44 2.47 2.49 2.49 2.48
+#> 2 South Korea 6.16 5.99 5.79 5.57 5.36 5.16
+```
+
+The same information is provided, but there are two important differences in the format: 1) each row includes several observations and 2) one of the variables, year, is stored in the header. For the tidyverse packages to be optimally used, data need to be reshaped into tidy format, which you will learn to do in the Data Wrangling part of the book. Until then, we will use example datasets that are already in tidy format.
+
+Although not immediately obvious, as you go through the book you will start to appreciate the advantages of working in a framework in which functions use tidy formats for both inputs and outputs. You will see how this permits the data analyst to focus on more important aspects of the analysis rather than the format of the data.
+
+# 5.2 Exercise
+1. C
+2. B
+3. C
+4. B,C,D,E
+
+#5.3 Manipulating data frames
+The dplyr package from the tidyverse introduces functions that perform some of the most common operations when working with data frames and uses names for these functions that are relatively easy to remember.
+
+#5.3.1 Adding a column with mutate
+
+Ex
+```{r}
+library(dslabs)
+data("murders")
+murders <- mutate(murders, rate = total / population * 100000)
+```
+
+#5.3.2 Subsetting with filter
+
+to filter the data table to only show the entries for which the murder rate is lower than 0.71.
+Ex
+```{r}
+filter(murders, rate <= 0.71)
+#>           state abb        region population total  rate
+#> 1        Hawaii  HI          West    1360301     7 0.515
+#> 2          Iowa  IA North Central    3046355    21 0.689
+#> 3 New Hampshire  NH     Northeast    1316470     5 0.380
+#> 4  North Dakota  ND North Central     672591     4 0.595
+#> 5       Vermont  VT     Northeast     625741     2 0.320
+```
+
+#5.3.3 Selecting columns with select
+
+Ex
+```{r}
+new_table <- select(murders, state, region, rate)
+filter(new_table, rate <= 0.71)
+#>           state        region  rate
+#> 1        Hawaii          West 0.515
+#> 2          Iowa North Central 0.689
+#> 3 New Hampshire     Northeast 0.380
+#> 4  North Dakota North Central 0.595
+#> 5       Vermont     Northeast 0.320
+```
+
+#5.4 Exercises
+
+1. add column 'rate'
+```{r}
+library(dplyr)
+library(dslabs)
+data("murders")
+murders <- mutate(murders, rate = total / population * 100000)
+```
+
+2. add column 'rank' of murder rates (from highest to lowest)
+```{r}
+library(dplyr)
+library(dslabs)
+data("murders")
+murders <- mutate(murders, rank = rank(-rate))
+```
+
+3. select columns only with state names and abbreviations in murders
+
+```{r}
+select(murders, state, abb)
+```
+
+4. filter top 5 states with the higest murder rates
+```{r}
+a = select(murders, state, rank)
+filter(a, rank < 6)
+```
+
+5. 
+```{r}
+no_south = filter (murders, region != "South")
+nrow (no_south)
+```
+
+6. 
+```{r}
+a = filter (murders, region %in% c("Northeast", "West"))
+nrow (a)
+```
+
+7. 
+```{r}
+my_states = select (murders, state, rate, rank)
+filter (my_states, rate < 1)
+```
+
+#5.5 The pipe: %>%
+
+pipe operator %>%
+
+original data -> select -> filter
+
+Ex1
+```{r}
+murders %>% select(state, region, rate) %>% filter(rate <= 0.71)
+#>           state        region  rate
+#> 1        Hawaii          West 0.515
+#> 2          Iowa North Central 0.689
+#> 3 New Hampshire     Northeast 0.380
+#> 4  North Dakota North Central 0.595
+#> 5       Vermont     Northeast 0.320
+```
+
+
+In general, the pipe sends the result of the left side of the pipe to be the first argument of the function on the right side of the pipe. Here is a very simple example:
+
+Ex2
+```{r}
+16 %>% sqrt() %>% log(base = 2)
+#> [1] 2
+```
+
+Therefore, when using the pipe with data frames and dplyr, we no longer need to specify the required first argument since the dplyr functions we have described all take the data as the first argument. In the code we wrote: Ex1
+
+
+#5.6 Exercises
+
+1.
+```{r}
+mutate(murders, rate =  total / population * 100000, rank = rank(-rate)) %>% 
+  select(state, rate, rank)
+```
+
+
+2. 
+```{r}
+data(murders)
+
+my_states <- 
+  mutate (murders, rate =  total / population * 100000, rank = rank(-rate))%>%
+  filter (region %in% c("Northeast", "West") & rate < 1)%>%
+  select (state, rate, rank)
+```
