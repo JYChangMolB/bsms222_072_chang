@@ -1,0 +1,218 @@
+---
+title: "R Notebook_Ch11_JYChang"
+output: html_notebook
+
+---
+# Chapter 11 Data visualization principles
+
+We have already provided some rules to follow as we created plots for our examples. Here, we aim to provide some general principles we can use as a guide for effective data visualization. Much of this section is based on a talk by Karl Broman titled “Creating Effective Figures and Tables” and includes some of the figures which were made with code that Karl makes available on his GitHub repository, as well as class notes from Peter Aldhous’ Introduction to Data Visualization course. Following Karl’s approach, we show some examples of plot styles we should avoid, explain how to improve them, and use these as motivation for a list of principles. We compare and contrast plots that follow these principles to those that don’t.
+
+The principles are mostly based on research related to how humans detect patterns and make visual comparisons. The preferred approaches are those that best fit the way our brains process visual information. When deciding on a visualization approach, it is also important to keep our goal in mind. We may be comparing a viewable number of quantities, describing distributions for categories or numeric values, comparing the data from two groups, or describing the relationship between two variables. As a final note, we want to emphasize that for a data scientist it is important to adapt and optimize graphs to the audience. For example, an exploratory plot made for ourselves will be different than a chart intended to communicate a finding to a general audience.
+
+We will be using these libraries:
+library(tidyverse)
+library(dslabs)
+library(gridExtra)
+
+# 11.1 Encoding data using visual cues
+
+# 11.2 Know when to include 0
+
+# 11.3 Do not distort quantities
+
+# 11.4 Order categories by a meaningful value
+
+# 11.5 Show the data
+
+# 11.6 Ease comparisons
+
+# 11.6.1  Use common axes
+Since there are so many points, it is more effective to show distributions rather than individual points. We therefore show histograms for each group:
+
+However, from this plot it is not immediately obvious that males are, on average, taller than females. We have to look carefully to notice that the x-axis has a higher range of values in the male histogram. An important principle here is to keep the axes the same when comparing data across to plots. Below we see how the comparison becomes easier:
+
+# 11.6.2 Align plots vertically to see horizontal changes and horizontally to see vertical changes
+In these histograms, the visual cue related to decreases or increases in height are shifts to the left or right respectively: horizontal changes. Aligning the plots vertically helps us see this change when the axes are fixed:
+```{r}
+heights %>% 
+  ggplot(aes(height, ..density..)) +
+  geom_histogram(binwidth = 1, color="black") +
+  facet_grid(sex~.)
+```
+This plot makes it much easier to notice that men are, on average, taller.
+
+If , we want the more compact summary provided by boxplots, we then align them horizontally since, by default, boxplots move up and down with changes in height. Following our show the data principle, we then overlay all the data points:
+```{r}
+ heights %>% 
+  ggplot(aes(sex, height)) + 
+  geom_boxplot(coef=3) + 
+  geom_jitter(width = 0.1, alpha = 0.2) +
+  ylab("Height in inches")
+```
+Now contrast and compare these three plots, based on exactly the same data:
+
+Notice how much more we learn from the two plots on the right. Barplots are useful for showing one number, but not very useful when we want to describe distributions.
+
+# 11.6.3 Consider transformations
+
+# 11.6.4 Visual cues to be compared should be adjacent
+
+# 11.6.5 Use color
+
+# 11.7 Think of the color blind
+
+# 11.8 Plots for two variables
+
+# 11.8.1 Slope charts
+
+One exception where another type of plot may be more informative is when you are comparing variables of the same type, but at different time points and for a relatively small number of comparisons. For example, comparing life expectancy between 2010 and 2015. In this case, we might recommend a slope chart.
+
+There is no geometry for slope charts in ggplot2, but we can construct one using geom_line. We need to do some tinkering to add labels. Below is an example comparing 2010 to 2015 for large western countries:
+```{r}
+west <- c("Western Europe","Northern Europe","Southern Europe",
+          "Northern America","Australia and New Zealand")
+
+dat <- gapminder %>% 
+  filter(year%in% c(2010, 2015) & region %in% west & 
+           !is.na(life_expectancy) & population > 10^7) 
+
+dat %>%
+  mutate(location = ifelse(year == 2010, 1, 2), 
+         location = ifelse(year == 2015 & 
+                             country %in% c("United Kingdom","Portugal"),
+                           location+0.22, location),
+         hjust = ifelse(year == 2010, 1, 0)) %>%
+  mutate(year = as.factor(year)) %>%
+  ggplot(aes(year, life_expectancy, group = country)) +
+  geom_line(aes(color = country), show.legend = FALSE) +
+  geom_text(aes(x = location, label = country, hjust = hjust), 
+            show.legend = FALSE) +
+  xlab("") + 
+  ylab("Life Expectancy")
+```
+
+An advantage of the slope chart is that it permits us to quickly get an idea of changes based on the slope of the lines. Although we are using angle as the visual cue, we also have position to determine the exact values. Comparing the improvements is a bit harder with a scatterplot:
+
+In the scatterplot, we have followed the principle use common axes since we are comparing these before and after. However, if we have many points, slope charts stop being useful as it becomes hard to see all the lines.
+
+# 11.8.2 Bland-Altman plot
+
+Since we are primarily interested in the difference, it makes sense to dedicate one of our axes to it. The Bland-Altman plot, also know as the Tukey mean-difference plot and the MA-plot, shows the difference versus the average:
+```{r}
+library(ggrepel)
+dat %>% 
+   mutate(year = paste0("life_expectancy_", year)) %>%
+   select(country, year, life_expectancy) %>% spread(year, life_expectancy) %>% 
+  mutate(average = (life_expectancy_2015 + life_expectancy_2010)/2,
+         difference = life_expectancy_2015 - life_expectancy_2010) %>%
+  ggplot(aes(average, difference, label = country)) + 
+  geom_point() +
+  geom_text_repel() +
+  geom_abline(lty = 2) +
+  xlab("Average of 2010 and 2015") + 
+  ylab("Difference between 2015 and 2010")
+```
+Here, by simply looking at the y-axis, we quickly see which countries have shown the most improvement. We also get an idea of the overall value from the x-axis.
+
+# 11.9 Encoding a third variable
+
+# 11.10 Avoid pseudo-three-dimensional plots
+
+# 11.11 Avoid too many significant digits
+
+# 11.12 Know your audience
+
+# 11.13 Exercises
+```{r}
+library(dslabs)
+data(us_contagious_diseases)
+```
+
+1. A
+2. B
+3. C
+6. C
+
+# 11.14 Case study: impact of vaccines on battling infectious diseases
+
+Vaccines have helped save millions of lives. In the 19th century, before herd immunization was achieved through vaccination programs, deaths from infectious diseases, such as smallpox and polio, were common. However, today vaccination programs have become somewhat controversial despite all the scientific evidence for their importance.
+
+The controversy started with a paper published in 1988 and lead by Andrew Wakefield claiming there was a link between the administration of the measles, mumps and rubella (MMR) vaccine and the appearance of autism and bowel disease. Despite much scientific evidence contradicting this finding, sensationalist media reports and fear-mongering from conspiracy theorists led parts of the public into believing that vaccines were harmful. As a result, many parents ceased to vaccinate their children. This dangerous practice can be potentially disastrous given that the Center for Disease Control (CDC) estimates that vaccinations will prevent more than 21 million hospitalizations and 732,000 deaths among children born in the last 20 years (see Benefits from Immunization during the Vaccines for Children Program Era — United States, 1994-2013, MMWR). The 1988 paper has since been retracted and Andrew Wakefield was eventually “struck off the UK medical register, with a statement identifying deliberate falsification in the research published in The Lancet, and was thereby barred from practicing medicine in the UK.” (source: Wikipedia). Yet misconceptions persist, in part due to self-proclaimed activists who continue to disseminate misinformation about vaccines.
+
+Effective communication of data is a strong antidote to misinformation and fear-mongering. Earlier we used an example provided by a Wall Street Journal article showing data related to the impact of vaccines on battling infectious diseases. Here we reconstruct that example.
+
+The data used for these plots were collected, organized and distributed by the Tycho Project. They include weekly reported counts for seven diseases from 1928 to 2011, from all fifty states. We include the yearly totals in the dslabs package:
+
+```{r}
+library(tidyverse)
+library(dslabs)
+data(us_contagious_diseases)
+str(us_contagious_diseases)
+#> 'data.frame':    18870 obs. of  6 variables:
+#>  $ disease        : Factor w/ 7 levels "Hepatitis A",..: 1 1 1 1 1 1 1 1 1 1 ...
+#>  $ state          : Factor w/ 51 levels "Alabama","Alaska",..: 1 1 1 1 1 1 1 1 1 1 ...
+#>  $ year           : num  1966 1967 1968 1969 1970 ...
+#>  $ weeks_reporting: int  50 49 52 49 51 51 45 45 45 46 ...
+#>  $ count          : num  321 291 314 380 413 378 342 467 244 286 ...
+#>  $ population     : num  3345787 3364130 3386068 3412450 3444165 ...
+```
+
+We create a temporary object dat that stores only the measles data, includes a per 100,000 rate, orders states by average value of disease and removes Alaska and Hawaii since they only became states in the late 50s. Note that there is a weeks_reporting column that tells us for how many weeks of the year data was reported. We have to adjust for that value when computing the rate.
+
+```{r}
+the_disease <- "Measles"
+dat <- us_contagious_diseases %>%
+  filter(!state%in%c("Hawaii","Alaska") & disease == the_disease) %>%
+  mutate(rate = count / population * 10000 * 52 / weeks_reporting) %>% 
+  mutate(state = reorder(state, rate)) 
+```
+
+```{r}
+dat %>% filter(state == "California" & !is.na(rate)) %>%
+  ggplot(aes(year, rate)) +
+  geom_line() + 
+  ylab("Cases per 10,000")  + 
+  geom_vline(xintercept=1963, col = "blue")
+```
+We add a vertical line at 1963 since this is when the vaccine was introduced [Control, Centers for Disease; Prevention (2014). CDC health information for international travel 2014 (the yellow book). p. 250. ISBN 9780199948505].
+
+Now can we show data for all states in one plot? We have three variables to show: year, state and rate. In the WSJ figure, they use the x-axis for year, the y-axis for state and color hue to represent rates. However, the color scale they use, which goes from yellow to blue to green to orange to red, can be improved.
+
+In our example, we want to use a sequential palette since there is no meaningful center, just low and high rates.
+
+We use the geometry geom_tile to tile the region with colors representing disease rates. We use a square root transformation to avoid having the really high counts dominate the plot. Notice that missing values are shown in grey. Note that once a disease was pretty much eradicated, some states stopped reporting cases all together. This is why we see so much grey after 1980.
+
+```{r}
+dat %>% ggplot(aes(year, state, fill = rate)) +
+  geom_tile(color = "grey50") +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_fill_gradientn(colors = RColorBrewer::brewer.pal(9, "Reds"), trans = "sqrt") +
+  geom_vline(xintercept=1963, col = "blue") +
+  theme_minimal() +  theme(panel.grid = element_blank()) +
+  ggtitle(the_disease) + 
+  ylab("") + 
+  xlab("")
+```
+This plot makes a very striking argument for the contribution of vaccines. However, one limitation of this plot is that it uses color to represent quantity, which we earlier explained makes it harder to know exactly how high values are going. Position and lengths are better cues. If we are willing to lose state information, we can make a version of the plot that shows the values with position. We can also show the average for the US, which we compute like this:
+
+```{r}
+avg <- us_contagious_diseases %>%
+  filter(disease==the_disease) %>% group_by(year) %>%
+  summarize(us_rate = sum(count, na.rm=TRUE)/sum(population, na.rm=TRUE)*10000)
+```
+```{r}
+dat %>% 
+  filter(!is.na(rate)) %>%
+    ggplot() +
+  geom_line(aes(year, rate, group = state),  color = "grey50", 
+            show.legend = FALSE, alpha = 0.2, size = 1) +
+  geom_line(mapping = aes(year, us_rate),  data = avg, size = 1, color = "black") +
+  scale_y_continuous(trans = "sqrt", breaks = c(5, 25, 125, 300)) + 
+  ggtitle("Cases per 10,000 by state") + 
+  xlab("") + 
+  ylab("") +
+  geom_text(data = data.frame(x = 1955, y = 50), 
+            mapping = aes(x, y, label="US average"), 
+            color="black") + 
+  geom_vline(xintercept=1963, col = "blue") 
+```
