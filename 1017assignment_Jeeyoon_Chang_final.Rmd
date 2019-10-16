@@ -13,15 +13,10 @@ The development of the prefrontal cortex (PFC) is complicated and needs intensiv
 
 
 ```{r}
-
-install.packages ("readxl")
 library(readxl)
-NMD <- read_excel("NMD_de novo.xlsx")
 e$gene_symbol <- paste(g$gene_symbol)
-install.packages("ggplot2")
 library(ggplot2)
 library(dplyr)
-install.packages("tidyr")
 library(tidyr)
 targets <- intersect (NMD$`Supplementary Table 1 | Differential expression of RNA fragments that derived from bona fide NMD targets.`,e$gene_symbol)
 targets_in_brain <- e %>% filter (gene_symbol %in% targets)
