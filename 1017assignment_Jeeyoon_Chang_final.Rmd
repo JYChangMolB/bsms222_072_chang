@@ -1,0 +1,39 @@
+---
+title: "assignment1_2016140072_Jeeyoon_Chang"
+output: html_notebook
+---
+
+# 1017_assignment_Jeeyoon_Chang
+
+# Is non-sense mediated mRNA decay utilized in different efficiency during brain developmental time?
+The development of the prefrontal cortex (PFC) is complicated and needs intensive research. The mechanisms underlying expression and stability of specific factors and genes required for PFC development should be intensively researched to understand the dynamics of neurodevelopemnt and overcome neurodevelopment disorder. Recently, non-sense mediated mRNA decay (NMD) is gaining attention for its implication on neural development and stability. The mutations in key-factors of NMD pathways are linked to neurodevelopment and neurodegenerative disorders. NMD is originally known as translation-dependent RNA surveillance pathway that degrades abnormal mRNAs including PTC-bearing mRNAs. Here, I analyzed the mRNA level of de novo NMD targets in the subset of the human dorsolateral prefrontal cortex, from early fetal to late adulthood. If the level of NMD is differentiated dependent on its brain span, the mRNA level of NMD targets should be actively up- or downregulated. However, after the analysis of NMD target expression levels, it is revealed that NMD targets does not show intriguing pattern dependent on its brainspan. This result can be explained in two ways. (1) The NMD is stably working in neurons, independently from the brainspan. (2) The NMD target acquired from HeLa cell line is not bona fide target of NMD, which are intensively regulated and degraded in neural cells. 
+
+- Data of de novo NMD targets are acquired from 
+"Kurosaki, T., Miyoshi, K., Myers, J. R., & Maquat, L. E. (2018). NMD-degradome sequencing reveals ribosome-bound intermediates with 3′-end non-templated nucleotides. Nature structural & molecular biology, 25(10), 940. "
+
+
+```{r}
+
+install.packages ("readxl")
+library(readxl)
+NMD <- read_excel("NMD_de novo.xlsx")
+e$gene_symbol <- paste(g$gene_symbol)
+install.packages("ggplot2")
+library(ggplot2)
+library(dplyr)
+install.packages("tidyr")
+library(tidyr)
+targets <- intersect (NMD$`Supplementary Table 1 | Differential expression of RNA fragments that derived from bona fide NMD targets.`,e$gene_symbol)
+targets_in_brain <- e %>% filter (gene_symbol %in% targets)
+df <- targets_in_brain %>% gather(key = "ID_Time", value = "value", X1:X35, na.rm = FALSE,
+       convert = FALSE, factor_key = FALSE)
+df$ID_Time = gsub("X","",df$ID_Time)
+df$ID_Time = as.factor(df$ID_Time)
+
+A <- ggplot(df, aes(x=ID_Time, y=log2(value))) +
+  geom_boxplot()
+A +  scale_x_discrete(name ="Brain developmental time", 
+                         limits=c(1:35)) + 
+  scale_y_continuous(name = "log2(expression)")
+
+```
